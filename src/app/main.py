@@ -3,6 +3,7 @@ import random
 import time
 from typing import Optional, Dict
 
+import pyroscope
 import httpx
 import uvicorn
 from fastapi import FastAPI, Response
@@ -10,7 +11,6 @@ from opentelemetry.propagate import inject
 
 from utils import PrometheusMiddleware, metrics, setting_otlp
 import constants
-
 
 
 app = FastAPI()
@@ -21,6 +21,15 @@ app.add_route("/metrics", metrics)
 
 # Setting OpenTelemetry exporter
 setting_otlp(app, constants.APP_NAME, constants.OTLP_GRPC_ENDPOINT)
+
+pyroscope.configure(
+    application_name=constants.APP_NAME,
+    server_address=constants.PYROSCOPE_ENDPOINT,
+    tags           = {
+        "app":  constants.APP_NAME,
+    }
+)
+
 
 
 class EndpointFilter(logging.Filter):
@@ -55,7 +64,7 @@ async def io_task():
 @app.get("/cpu_task")
 async def cpu_task():
     for i in range(1000):
-        _ = i*i*i
+        _ = i * i * i
     logging.error("cpu task")
     return "CPU bound task finish!"
 
@@ -82,22 +91,33 @@ async def error_test(response: Response):
 
 @app.get("/chain")
 async def chain(response: Response):
-
     headers: Dict[str, str] = {}
     inject(headers)  # inject trace info to header
     logging.critical(headers)
 
     async with httpx.AsyncClient() as client:
-        await client.get("http://localhost:8000/", headers=headers,)
+        await client.get(
+            "http://localhost:8000/",
+            headers=headers,
+        )
     async with httpx.AsyncClient() as client:
-        await client.get(f"http://{constants.TARGET_ONE_HOST}:8000/io_task", headers=headers,)
+        await client.get(
+            f"http://{constants.TARGET_ONE_HOST}:8000/io_task",
+            headers=headers,
+        )
     async with httpx.AsyncClient() as client:
-        await client.get(f"http://{constants.TARGET_TWO_HOST}:8000/cpu_task", headers=headers,)
+        await client.get(
+            f"http://{constants.TARGET_TWO_HOST}:8000/cpu_task",
+            headers=headers,
+        )
     logging.info("Chain Finished")
     return {"path": "/chain"}
+
 
 if __name__ == "__main__":
     # update uvicorn access logger format
     log_config = uvicorn.config.LOGGING_CONFIG
-    log_config["formatters"]["access"]["fmt"] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
+    log_config["formatters"]["access"][
+        "fmt"
+    ] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
     uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
