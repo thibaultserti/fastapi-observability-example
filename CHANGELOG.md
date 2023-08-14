@@ -1,3 +1,13 @@
+# [1.1.0](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.0.0...v1.1.0) (2023-08-14)
+
+
+### Features
+
+* add phlare instrumentation ([e1f5535](https://github.com/thibaultserti/fastapi-observability-example/commit/e1f5535e8803df4abaf11a77aaa3d8174f7a8b72))
+* add tags for better profiling ([4f8686f](https://github.com/thibaultserti/fastapi-observability-example/commit/4f8686fabc0097d877a3b43498900173e5f8f552))
+* downgrade pyroscope ([6002e21](https://github.com/thibaultserti/fastapi-observability-example/commit/6002e219fe1d3d0fe27fd972cb907d9ba15d5fa4))
+* remove async to profile ([1197dd2](https://github.com/thibaultserti/fastapi-observability-example/commit/1197dd2faa9dd73ca0e7fd253e7101aa76f9df9b))
+
 # 1.0.0 (2023-08-13)
 
 
