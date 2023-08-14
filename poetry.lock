@@ -658,6 +658,20 @@ files = [
 ]
 
 [[package]]
+name = "milksnakex"
+version = "0.1.6"
+description = "A python library that extends setuptools for binary extensions."
+optional = false
+python-versions = "*"
+files = [
+    {file = "milksnakex-0.1.6-py2.py3-none-any.whl", hash = "sha256:7dce35fc4410bd7207b9a64f6249d16ae5c272768419912b582e5e71d198046a"},
+    {file = "milksnakex-0.1.6.tar.gz", hash = "sha256:fa9566670d6aeb3a6ced4ae65617d534206616bb052fe8bf1a82b4e0528d5fef"},
+]
+
+[package.dependencies]
+cffi = ">=1.6.0"
+
+[[package]]
 name = "mypy"
 version = "1.5.0"
 description = "Optional static typing for Python"
@@ -1107,20 +1121,20 @@ testutils = ["gitpython (>3)"]
 
 [[package]]
 name = "pyroscope-io"
-version = "0.8.5"
+version = "0.7.1"
 description = "Pyroscope Python integration"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pyroscope-io-0.8.5.tar.gz", hash = "sha256:247cb36848a4e40df5d1b53e70cb4638b4674504bc327f3596d459a6526a17b4"},
-    {file = "pyroscope_io-0.8.5-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:2b9067a3dfb8bef9af87066f06b57831195d73d000741558b9c89fa41496f19c"},
-    {file = "pyroscope_io-0.8.5-py2.py3-none-macosx_11_0_x86_64.whl", hash = "sha256:95b5356af323c401bbe7163179a2a87227322df2b6add8717913eb9d3436728e"},
-    {file = "pyroscope_io-0.8.5-py2.py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:2efef45a64ae4c064c3c1a7228bfad43d6223172b92b62b1f8464c72d42387d9"},
-    {file = "pyroscope_io-0.8.5-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:451f47753a92efc6e0645f6280e8e2586c27414baff40fea8bac2db8570f0283"},
+    {file = "pyroscope-io-0.7.1.tar.gz", hash = "sha256:4004acc7a68d7e21397477cbbc741641c5afac9f270dcf7d42b0820b2cda09f5"},
+    {file = "pyroscope_io-0.7.1-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:58c3bf02da885cd07b4952e8a6849578dbfe8e23dc33df05183993f6e9247b93"},
+    {file = "pyroscope_io-0.7.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:7c8c54164fc00b2a4de23e5917adc3a3a5ab68bc740c6801d402dbe63b62f2ab"},
+    {file = "pyroscope_io-0.7.1-py2.py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:165f4fc64d026fb8df1e8f9e1d5164053d558c1e3b00a6fd7f8aeec3dc31b685"},
+    {file = "pyroscope_io-0.7.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:609383f9d2db1d417c1d31e243b3fc0c8c3b6da1822d241063a531ac866e63ea"},
 ]
 
 [package.dependencies]
-cffi = ">=1.6.0"
+milksnakex = ">=0.1.6"
 
 [[package]]
 name = "pytest"
@@ -1426,4 +1440,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "cb98fae03ab6bb84692daad490f1c0397a6ca0abaf09ce4e675f3db84432920d"
+content-hash = "5d33b68b11e79a16fcf4bc761844227f587b8f72c6a18fb60f3aa70d9c01b071"

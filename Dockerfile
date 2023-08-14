@@ -11,7 +11,7 @@ ENV PIP_DEFAULT_TIMEOUT=100 \
     PYTHONUNBUFFERED=1
 
 ENV UID=10001
-LABEL org.opencontainers.image.description="Secure image for docker Python bootstrap app"
+LABEL org.opencontainers.image.description="fastapi-observability-example"
 RUN pip install poetry=="${POETRY_VERSION}" && \
     adduser \
     --disabled-password \

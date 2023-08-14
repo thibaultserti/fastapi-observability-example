@@ -20,7 +20,7 @@ opentelemetry-instrumentation-logging = "^0.40b0"
 starlette = "<0.28.0"
 httpx = "^0.24.1"
 prometheus-client = "^0.17.1"
-pyroscope-io = "^0.8.5"
+pyroscope-io = "0.7.1"
 
 [tool.poetry.group.dev.dependencies]
 types-pyyaml = "^6.0.12.8"
