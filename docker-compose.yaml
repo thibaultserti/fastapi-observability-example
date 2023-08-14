@@ -1,24 +1,19 @@
-
-version: "3.4"
-
+version: '3.9'
 services:
-  app-a:
-    build: .
-    ports:
-      - "8000:8000"
+  us-east:
     environment:
-      APP_NAME: "app-a"
+      - REGION=us-east
+    build:
+      context: .
 
-  app-b:
-    build: .
-    ports:
-      - "8001:8000"
+  eu-north:
     environment:
-      APP_NAME: "app-b"
+      - REGION=eu-north
+    build:
+      context: .
 
-  app-c:
-    build: .
-    ports:
-      - "8002:8000"
+  ap-south:
     environment:
-      APP_NAME: "app-c"
+      - REGION=ap-south
+    build:
+      context: .
