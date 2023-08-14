@@ -47,14 +47,14 @@ logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 
 @app.get("/")
-async def read_root():
+def read_root():
     with pyroscope.tag_wrapper({ "function": "read_root" }):
         logging.error("Hello World")
         return {"Hello": "World"}
 
 
 @app.get("/items/{item_id}")
-async def read_item(item_id: int, q: Optional[str] = None):
+def read_item(item_id: int, q: Optional[str] = None):
     with pyroscope.tag_wrapper({ "function": "read_item" }):
 
         logging.error("items")
@@ -62,7 +62,7 @@ async def read_item(item_id: int, q: Optional[str] = None):
 
 
 @app.get("/io_task")
-async def io_task():
+def io_task():
     with pyroscope.tag_wrapper({ "function": "io_task" }):
         time.sleep(1)
         logging.error("io task")
@@ -70,7 +70,7 @@ async def io_task():
 
 
 @app.get("/cpu_task")
-async def cpu_task():
+def cpu_task():
     with pyroscope.tag_wrapper({ "function": "cpu_task" }):
         for i in range(1000):
             _ = i * i * i
@@ -79,7 +79,7 @@ async def cpu_task():
 
 
 @app.get("/random_status")
-async def random_status(response: Response):
+def random_status(response: Response):
     with pyroscope.tag_wrapper({ "function": "random_status" }):
         response.status_code = random.choice([200, 200, 300, 400, 500])
         logging.error("random status")
@@ -87,7 +87,7 @@ async def random_status(response: Response):
 
 
 @app.get("/random_sleep")
-async def random_sleep(response: Response):
+def random_sleep(response: Response):
     with pyroscope.tag_wrapper({ "function": "random_sleep" }):
         time.sleep(random.randint(0, 5))
         logging.error("random sleep")
@@ -95,7 +95,7 @@ async def random_sleep(response: Response):
 
 
 @app.get("/error_test")
-async def error_test(response: Response):
+def error_test(response: Response):
     with pyroscope.tag_wrapper({ "function": "error_test" }):
         logging.error("got error!!!!")
         raise ValueError("value error")
@@ -127,10 +127,8 @@ async def chain(response: Response):
         return {"path": "/chain"}
 
 
-if __name__ == "__main__":
-    # update uvicorn access logger format
-    log_config = uvicorn.config.LOGGING_CONFIG
-    log_config["formatters"]["access"][
-        "fmt"
-    ] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
-    uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
+log_config = uvicorn.config.LOGGING_CONFIG
+log_config["formatters"]["access"][
+    "fmt"
+] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
+uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
