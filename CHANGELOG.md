@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.1.0...v1.1.1) (2023-08-27)
+
+
+### Bug Fixes
+
+* readd pyroscope ([f89d729](https://github.com/thibaultserti/fastapi-observability-example/commit/f89d729911c2ae9e03143929f0097ccb03657755))
+
 # [1.1.0](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.0.0...v1.1.0) (2023-08-14)
 
 
