@@ -22,6 +22,17 @@ app.add_route("/metrics", metrics)
 # Setting OpenTelemetry exporter
 setting_otlp(app, constants.APP_NAME, constants.OTLP_GRPC_ENDPOINT)
 
+pyroscope.configure(
+    application_name=constants.APP_NAME,
+    server_address=constants.PYROSCOPE_ENDPOINT,
+    tags           = {
+        "app":  constants.APP_NAME,
+    },
+    enable_logging=True,
+    detect_subprocesses = True, # detect subprocesses started by the main process; default is False
+    oncpu               = True, # report cpu time only; default is True
+    gil_only            = True, # only include traces for threads that are holding on to the Global Interpreter Lock; default is True
+)
 
 
 
@@ -36,79 +47,90 @@ logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 
 @app.get("/")
-def read_root():
-    logging.error("Hello World")
-    return {"Hello": "World"}
+async def read_root():
+    with pyroscope.tag_wrapper({ "function": "read_root" }):
+        logging.error("Hello World")
+        return {"Hello": "World"}
 
 
 @app.get("/items/{item_id}")
-def read_item(item_id: int, q: Optional[str] = None):
-    logging.error("items")
-    return {"item_id": item_id, "q": q}
+async def read_item(item_id: int, q: Optional[str] = None):
+    with pyroscope.tag_wrapper({ "function": "read_item" }):
+
+        logging.error("items")
+        return {"item_id": item_id, "q": q}
 
 
 @app.get("/io_task")
-def io_task():
-    time.sleep(1)
-    logging.error("io task")
-    return "IO bound task finish!"
+async def io_task():
+    with pyroscope.tag_wrapper({ "function": "io_task" }):
+        time.sleep(1)
+        logging.error("io task")
+        return "IO bound task finish!"
 
 
 @app.get("/cpu_task")
-def cpu_task():
-    for i in range(1000):
-        _ = i * i * i
-    logging.error("cpu task")
-    return "CPU bound task finish!"
+async def cpu_task():
+    with pyroscope.tag_wrapper({ "function": "cpu_task" }):
+        for i in range(1000):
+            _ = i * i * i
+        logging.error("cpu task")
+        return "CPU bound task finish!"
 
 
 @app.get("/random_status")
-def random_status(response: Response):
-    response.status_code = random.choice([200, 200, 300, 400, 500])
-    logging.error("random status")
-    return {"path": "/random_status"}
+async def random_status(response: Response):
+    with pyroscope.tag_wrapper({ "function": "random_status" }):
+        response.status_code = random.choice([200, 200, 300, 400, 500])
+        logging.error("random status")
+        return {"path": "/random_status"}
 
 
 @app.get("/random_sleep")
-def random_sleep(response: Response):
-    time.sleep(random.randint(0, 5))
-    logging.error("random sleep")
-    return {"path": "/random_sleep"}
+async def random_sleep(response: Response):
+    with pyroscope.tag_wrapper({ "function": "random_sleep" }):
+        time.sleep(random.randint(0, 5))
+        logging.error("random sleep")
+        return {"path": "/random_sleep"}
 
 
 @app.get("/error_test")
-def error_test(response: Response):
-    logging.error("got error!!!!")
-    raise ValueError("value error")
+async def error_test(response: Response):
+    with pyroscope.tag_wrapper({ "function": "error_test" }):
+        logging.error("got error!!!!")
+        raise ValueError("value error")
 
 
 @app.get("/chain")
 async def chain(response: Response):
-    headers: Dict[str, str] = {}
-    inject(headers)  # inject trace info to header
-    logging.critical(headers)
+    with pyroscope.tag_wrapper({ "function": "chain" }):
+        headers: Dict[str, str] = {}
+        inject(headers)  # inject trace info to header
+        logging.critical(headers)
 
-    async with httpx.AsyncClient() as client:
-        await client.get(
-            "http://localhost:8000/",
-            headers=headers,
-        )
-    async with httpx.AsyncClient() as client:
-        await client.get(
-            f"http://{constants.TARGET_ONE_HOST}/io_task",
-            headers=headers,
-        )
-    async with httpx.AsyncClient() as client:
-        await client.get(
-            f"http://{constants.TARGET_TWO_HOST}/cpu_task",
-            headers=headers,
-        )
-    logging.info("Chain Finished")
-    return {"path": "/chain"}
+        async with httpx.AsyncClient() as client:
+            await client.get(
+                "http://localhost:8000/",
+                headers=headers,
+            )
+        async with httpx.AsyncClient() as client:
+            await client.get(
+                f"http://{constants.TARGET_ONE_HOST}:8000/io_task",
+                headers=headers,
+            )
+        async with httpx.AsyncClient() as client:
+            await client.get(
+                f"http://{constants.TARGET_TWO_HOST}:8000/cpu_task",
+                headers=headers,
+            )
+        logging.info("Chain Finished")
+        return {"path": "/chain"}
 
 
-log_config = uvicorn.config.LOGGING_CONFIG
-log_config["formatters"]["access"][
-    "fmt"
-] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
-uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
+if __name__ == "__main__":
+    # update uvicorn access logger format
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["access"][
+        "fmt"
+    ] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
+    uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
