@@ -28,7 +28,6 @@ pyroscope.configure(
     tags           = {
         "app":  constants.APP_NAME,
     },
-    enable_logging=True,
     detect_subprocesses = True, # detect subprocesses started by the main process; default is False
     oncpu               = True, # report cpu time only; default is True
     gil_only            = True, # only include traces for threads that are holding on to the Global Interpreter Lock; default is True
