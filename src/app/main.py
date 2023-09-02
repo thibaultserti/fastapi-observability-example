@@ -25,12 +25,6 @@ setting_otlp(app, constants.APP_NAME, constants.OTLP_GRPC_ENDPOINT)
 pyroscope.configure(
     application_name=constants.APP_NAME,
     server_address=constants.PYROSCOPE_ENDPOINT,
-    tags           = {
-        "app":  constants.APP_NAME,
-    },
-    detect_subprocesses = True, # detect subprocesses started by the main process; default is False
-    oncpu               = True, # report cpu time only; default is True
-    gil_only            = True, # only include traces for threads that are holding on to the Global Interpreter Lock; default is True
 )
 
 
