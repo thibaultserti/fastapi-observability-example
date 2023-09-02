@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.1.2...v1.1.3) (2023-09-02)
+
+
+### Bug Fixes
+
+* fix profiling and python version ([76da0dc](https://github.com/thibaultserti/fastapi-observability-example/commit/76da0dc58afa77163e804d7e6b933fe5340811bb))
+
 ## [1.1.2](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.1.1...v1.1.2) (2023-08-29)
 
 
