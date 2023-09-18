@@ -28,6 +28,6 @@ COPY poetry.lock pyproject.toml /app/
 RUN poetry export -f requirements.txt --without-hashes | pip install -r /dev/stdin
 COPY src/app /app
 
-EXPOSE 8080
+EXPOSE 8000
 USER ${USER}:${USER}
 ENTRYPOINT ["python3", "main.py"]

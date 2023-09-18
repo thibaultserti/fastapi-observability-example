@@ -28,7 +28,6 @@ pyroscope.configure(
 )
 
 
-
 class EndpointFilter(logging.Filter):
     # Uvicorn endpoint access log filter
     def filter(self, record: logging.LogRecord) -> bool:
@@ -41,22 +40,21 @@ logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 @app.get("/")
 async def read_root():
-    with pyroscope.tag_wrapper({ "function": "read_root" }):
+    with pyroscope.tag_wrapper({"function": "read_root"}):
         logging.error("Hello World")
         return {"Hello": "World"}
 
 
 @app.get("/items/{item_id}")
 async def read_item(item_id: int, q: Optional[str] = None):
-    with pyroscope.tag_wrapper({ "function": "read_item" }):
-
+    with pyroscope.tag_wrapper({"function": "read_item"}):
         logging.error("items")
         return {"item_id": item_id, "q": q}
 
 
 @app.get("/io_task")
 async def io_task():
-    with pyroscope.tag_wrapper({ "function": "io_task" }):
+    with pyroscope.tag_wrapper({"function": "io_task"}):
         time.sleep(1)
         logging.error("io task")
         return "IO bound task finish!"
@@ -64,7 +62,7 @@ async def io_task():
 
 @app.get("/cpu_task")
 async def cpu_task():
-    with pyroscope.tag_wrapper({ "function": "cpu_task" }):
+    with pyroscope.tag_wrapper({"function": "cpu_task"}):
         for i in range(1000):
             _ = i * i * i
         logging.error("cpu task")
@@ -73,7 +71,7 @@ async def cpu_task():
 
 @app.get("/random_status")
 async def random_status(response: Response):
-    with pyroscope.tag_wrapper({ "function": "random_status" }):
+    with pyroscope.tag_wrapper({"function": "random_status"}):
         response.status_code = random.choice([200, 200, 300, 400, 500])
         logging.error("random status")
         return {"path": "/random_status"}
@@ -81,7 +79,7 @@ async def random_status(response: Response):
 
 @app.get("/random_sleep")
 async def random_sleep(response: Response):
-    with pyroscope.tag_wrapper({ "function": "random_sleep" }):
+    with pyroscope.tag_wrapper({"function": "random_sleep"}):
         time.sleep(random.randint(0, 5))
         logging.error("random sleep")
         return {"path": "/random_sleep"}
@@ -89,14 +87,14 @@ async def random_sleep(response: Response):
 
 @app.get("/error_test")
 async def error_test(response: Response):
-    with pyroscope.tag_wrapper({ "function": "error_test" }):
+    with pyroscope.tag_wrapper({"function": "error_test"}):
         logging.error("got error!!!!")
         raise ValueError("value error")
 
 
 @app.get("/chain")
 async def chain(response: Response):
-    with pyroscope.tag_wrapper({ "function": "chain" }):
+    with pyroscope.tag_wrapper({"function": "chain"}):
         headers: Dict[str, str] = {}
         inject(headers)  # inject trace info to header
         logging.critical(headers)
@@ -126,4 +124,4 @@ if __name__ == "__main__":
     log_config["formatters"]["access"][
         "fmt"
     ] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
-    uvicorn.run(app, host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
+    uvicorn.run("main:app", host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
