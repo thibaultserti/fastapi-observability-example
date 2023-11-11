@@ -1,127 +1,111 @@
 import logging
 import random
-import time
-from typing import Optional, Dict
 
-import pyroscope
 import httpx
 import uvicorn
-from fastapi import FastAPI, Response
-from opentelemetry.propagate import inject
 
-from utils import PrometheusMiddleware, metrics, setting_otlp
-import constants
+from constants import (
+    APP_HOST,
+    APP_PORT,
+    ENABLE_METRICS,
+    ENABLE_TRACING,
+    OTEL_EXPORTER_OTLP_ENDPOINT,
+    OTEL_SERVICE_NAME,
+    REDIS_HOST,
+    REDIS_PORT,
+)
+from fastapi import FastAPI, HTTPException, status, Request
+from fastapi.responses import JSONResponse
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace.status import Status, StatusCode
+
+
+from prometheus_fastapi_instrumentator import Instrumentator
+from redis import Redis
 
 
 app = FastAPI()
 
-# Setting metrics middleware
-app.add_middleware(PrometheusMiddleware, app_name=constants.APP_NAME)
-app.add_route("/metrics", metrics)
+redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+tracer_provider = trace.get_tracer_provider()
 
-# Setting OpenTelemetry exporter
-setting_otlp(app, constants.APP_NAME, constants.OTLP_GRPC_ENDPOINT)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-pyroscope.configure(
-    application_name=constants.APP_NAME,
-    server_address=constants.PYROSCOPE_ENDPOINT,
-)
+if ENABLE_METRICS:
+    Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
+if ENABLE_TRACING:
+    resource = Resource(attributes={
+        SERVICE_NAME: OTEL_SERVICE_NAME
+    })
 
-class EndpointFilter(logging.Filter):
-    # Uvicorn endpoint access log filter
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find("GET /metrics") == -1
+    provider = TracerProvider(resource=resource)
+    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces"))
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+    FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider, excluded_urls="/,/metrics")
+    RedisInstrumentor().instrument(tracer_provider=tracer_provider)
 
+@app.get("/", include_in_schema=False)
+async def health_check():
+    return JSONResponse(content={"status": "OK"})
 
-# Filter out /endpoint
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+@app.get("/read/{key}")
+async def read_from_redis(request: Request, key: str):
+    context = TraceContextTextMapPropagator().extract(carrier=request.headers, context=context)
+    with tracer_provider.get_tracer(__name__).start_as_current_span("read_from_redis"):
+        value = redis.get(key)
+        if value is not None:
+            return JSONResponse(content={"key": key, "value": value.decode("utf-8")})
+        else:
+            raise HTTPException(status_code=404, detail="Key not found in Redis")
 
+@app.post("/write/{key}")
+async def write_to_redis(request: Request, key: str, value: str, expiration: int):
+    context = TraceContextTextMapPropagator().extract(carrier=request.headers, context=context)
+    with tracer_provider.get_tracer(__name__).start_as_current_span("write_to_redis"):
+        redis.setex(key, expiration, value)
+        return JSONResponse(content={"message": "Data written to Redis"})
 
-@app.get("/")
-async def read_root():
-    with pyroscope.tag_wrapper({"function": "read_root"}):
-        logging.error("Hello World")
-        return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: int, q: Optional[str] = None):
-    with pyroscope.tag_wrapper({"function": "read_item"}):
-        logging.error("items")
-        return {"item_id": item_id, "q": q}
-
-
-@app.get("/io_task")
-async def io_task():
-    with pyroscope.tag_wrapper({"function": "io_task"}):
-        time.sleep(1)
-        logging.error("io task")
-        return "IO bound task finish!"
-
-
-@app.get("/cpu_task")
-async def cpu_task():
-    with pyroscope.tag_wrapper({"function": "cpu_task"}):
-        for i in range(1000):
-            _ = i * i * i
-        logging.error("cpu task")
-        return "CPU bound task finish!"
-
-
-@app.get("/random_status")
-async def random_status(response: Response):
-    with pyroscope.tag_wrapper({"function": "random_status"}):
-        response.status_code = random.choice([200, 200, 300, 400, 500])
-        logging.error("random status")
-        return {"path": "/random_status"}
-
-
-@app.get("/random_sleep")
-async def random_sleep(response: Response):
-    with pyroscope.tag_wrapper({"function": "random_sleep"}):
-        time.sleep(random.randint(0, 5))
-        logging.error("random sleep")
-        return {"path": "/random_sleep"}
-
-
-@app.get("/error_test")
-async def error_test(response: Response):
-    with pyroscope.tag_wrapper({"function": "error_test"}):
-        logging.error("got error!!!!")
-        raise ValueError("value error")
-
-
-@app.get("/chain")
-async def chain(response: Response):
-    with pyroscope.tag_wrapper({"function": "chain"}):
-        headers: Dict[str, str] = {}
-        inject(headers)  # inject trace info to header
-        logging.critical(headers)
-
+@app.get("/call")
+async def call_external_api(request: Request):
+    context = TraceContextTextMapPropagator().extract(carrier=request.headers)
+    with tracer_provider.get_tracer(__name__).start_as_current_span("call_external_api", context=context):
         async with httpx.AsyncClient() as client:
-            await client.get(
-                "http://localhost:8000/",
-                headers=headers,
-            )
-        async with httpx.AsyncClient() as client:
-            await client.get(
-                f"http://{constants.TARGET_ONE_HOST}:8000/io_task",
-                headers=headers,
-            )
-        async with httpx.AsyncClient() as client:
-            await client.get(
-                f"http://{constants.TARGET_TWO_HOST}:8000/cpu_task",
-                headers=headers,
-            )
-        logging.info("Chain Finished")
-        return {"path": "/chain"}
+            response = await client.get("https://restcountries.com/v3.1/name/france?fullText=true")
+            return JSONResponse(content={"status_code": response.status_code, "content": response.text})
 
+
+@app.get("/exception")
+async def exception(request: Request):
+    context = TraceContextTextMapPropagator().extract(carrier=request.headers)
+    with tracer_provider.get_tracer(__name__).start_as_current_span("exception", context=context):
+        try:
+            raise ValueError("sadness")
+        except Exception as ex:
+            logger.error(ex, exc_info=True)
+            span = trace.get_current_span()
+
+            # generate random number
+            seconds = random.uniform(0, 30)
+
+            # record_exception converts the exception into a span event.
+            exception = IOError("Failed at " + str(seconds))
+            span.record_exception(exception)
+            span.set_attributes({'est': True})
+            # Update the span status to failed.
+            span.set_status(Status(StatusCode.ERROR, "internal error"))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Got sadness")
 
 if __name__ == "__main__":
-    # update uvicorn access logger format
-    log_config = uvicorn.config.LOGGING_CONFIG
-    log_config["formatters"]["access"][
-        "fmt"
-    ] = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
-    uvicorn.run("main:app", host="0.0.0.0", port=constants.EXPOSE_PORT, log_config=log_config)
+    uvicorn.run(app, host=APP_HOST, port=APP_PORT)
