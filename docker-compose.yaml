@@ -4,10 +4,12 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - ENABLE_METRICS=false
+      - ENABLE_TRACING=false
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otlp-http.ayanides.cloud:80
       - OTEL_SERVICE_NAME=fastapi-observability-example
-      - ENABLE_TRACING=true
-      - ENABLE_METRICS=true
+      - ENABLE_PROFILING=true
+      - PYROSCOPE_ENDPOINT=https://pyroscope.ayanides.cloud
       - REDIS_HOST=redis
 
   redis:

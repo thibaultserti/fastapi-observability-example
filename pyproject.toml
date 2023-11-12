@@ -18,6 +18,7 @@ opentelemetry-instrumentation-fastapi = "^0.42b0"
 opentelemetry-instrumentation-redis = "^0.42b0"
 httpx = "^0.25.1"
 opentelemetry-exporter-otlp = "^1.21.0"
+pyroscope-io = "^0.8.5"
 
 
 [tool.poetry.group.dev.dependencies]
