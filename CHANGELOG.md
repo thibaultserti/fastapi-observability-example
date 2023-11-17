@@ -1,3 +1,16 @@
+# [2.0.0](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.1.3...v2.0.0) (2023-11-17)
+
+
+### Features
+
+* add profiling ([706d1a0](https://github.com/thibaultserti/fastapi-observability-example/commit/706d1a0a31e7c989613661a6269e2c14a47c7cf5))
+* rework all code ([1c30959](https://github.com/thibaultserti/fastapi-observability-example/commit/1c309596e6abf1bd0409597597debb615eef60f9))
+
+
+### BREAKING CHANGES
+
+* change all API code
+
 ## [1.1.3](https://github.com/thibaultserti/fastapi-observability-example/compare/v1.1.2...v1.1.3) (2023-09-02)
 
 
