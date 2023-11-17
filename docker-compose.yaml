@@ -1,19 +1,16 @@
-version: '3.9'
 services:
-  us-east:
+  challenge:
+    build: .
+    ports:
+      - "8000:8000"
     environment:
-      - REGION=us-east
-    build:
-      context: .
+      - ENABLE_METRICS=false
+      - ENABLE_TRACING=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otlp-http.ayanides.cloud:80
+      - OTEL_SERVICE_NAME=fastapi-observability-example
+      - ENABLE_PROFILING=true
+      - PYROSCOPE_ENDPOINT=https://pyroscope.ayanides.cloud
+      - REDIS_HOST=redis
 
-  eu-north:
-    environment:
-      - REGION=eu-north
-    build:
-      context: .
-
-  ap-south:
-    environment:
-      - REGION=ap-south
-    build:
-      context: .
+  redis:
+    image: "redis:alpine"
